@@ -693,7 +693,5 @@ export default{
     signOut
 }
 
-
-// https://docs.google.com/spreadsheets/d/1FeDBJZeIht0fadGr4Y82iVodfEcVcJMQq9I714Kk3E0/edit?usp=sharing
 // https://www.healthline.com/nutrition/common-food-allergies#fish
 // 🚨 ALLERGEN ALERT: Our Suya Spice blend contains almonds and peanuts. Always consider your individual dietary needs and restrictions.
