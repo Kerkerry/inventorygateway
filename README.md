@@ -14,4 +14,3 @@
 - How to update squarespace items using items fetched from veeqo
 - How to use cron job to schedule tasks to happen automatically
 - How to use express sessions and storing the cookies in your prefered database
-- 

@@ -1,6 +1,3 @@
-// Successfully initiated launch of instance (i-016efebc6da6fbcec)
-// https://www.sammeechward.com/deploying-full-stack-js-to-aws-ec2
-import connection from "./db_connection.js"
 
 const insertIntoErrors=(sku,error)=>`INSERT INTO errors (sku,error)VALUES("${sku}","${error}")`;
 
