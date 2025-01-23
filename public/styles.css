@@ -1,0 +1,47 @@
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-body {
+    padding: 30px;
+}
+
+.bi {
+    font-size: 2rem;
+}
+
+.display-4 {
+    font-weight: bold;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.card-1 {
+    background-color: #007bff; /* Blue */
+    color: white; /* White text for better contrast */
+}
+
+.card-2 {
+    background-color: #ffc107; /* Orange */
+    color: white; /* Black text for better contrast */
+}
+
+.card-3 {
+    background-color:rgb(21, 184, 12); /* Orange */
+    color: white; /* Black text for better contrast */
+}
+
+.card-4 {
+    background-color:rgb(45, 31, 59); /* Orange */
+    color: white; /* Black text for better contrast */
+}
+
+.card-5 {
+    background-color:rgb(39, 49, 5); /* Orange */
+    color: white; /* Black text for better contrast */
+}
