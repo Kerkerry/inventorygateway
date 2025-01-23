@@ -1,5 +1,5 @@
 # INVENTORY GATEWAY APP
-- This is a web applcation that does the following tasks:
+- ** This is a web applcation that does the following tasks: **
 1. Authenticates the user
 2. Fetches items from veeqo inventory
 3. Fetches items from squarespace ecommerce
