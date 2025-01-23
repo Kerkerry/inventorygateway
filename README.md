@@ -1,5 +1,5 @@
 # INVENTORY GATEWAY APP
-- ** This is a web applcation that does the following tasks: **
+_** This is a web applcation that does the following tasks: **_
 1. Authenticates the user
 2. Fetches items from veeqo inventory
 3. Fetches items from squarespace ecommerce
@@ -14,3 +14,4 @@
 - How to update squarespace items using items fetched from veeqo
 - How to use cron job to schedule tasks to happen automatically
 - How to use express sessions and storing the cookies in your prefered database
+- 
