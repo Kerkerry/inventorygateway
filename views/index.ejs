@@ -5,12 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <%- include("./partials/bootstrap.ejs")  %>
+    <style>
+          /* Styles for screens smaller than 768px wide */
+          @media (max-width: 768px) {
+            .card {
+              width: 70%;
+              margin-top: 13rem; 
+              padding: 0; /* Make card take full width */
+            }
+          }
+
+          /* Styles for screens between 768px and 1024px wide */
+          @media (min-width: 768px) and (max-width: 1024px) {
+            .card {
+              width: 55%;
+              margin-top: 15rem; 
+              padding: 0; /* Two cards per row */
+            }
+          }
+
+          /* Styles for screens larger than 1024px wide */
+          @media (min-width: 1024px) {
+            .card {
+              width: 40%;
+              margin-top: 13rem; 
+              padding: 0; /* Three cards per row */
+            }
+          }
+    </style>
 </head>
 <body >
     <div class="row justify-content-center align-items-center">
         
-      <div class="col-md-6 offset-md-3"> 
-        <div class="card" style="width: 38rem; margin-top: 8rem; padding: 0;">
+        <div class="card">
             <div class="card-header bg-secondary text-white text-center">
                 <h3>Login</h3>
             </div>
@@ -37,7 +64,6 @@
                   </form>
             </div>
         </div>
-      </div>
     </div>
 
     <%- include("./partials/jquery.ejs")  %>

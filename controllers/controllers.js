@@ -156,12 +156,6 @@ const fetchFromVeeqo=()=>{
     
       res.on('end', () => {
         const products = JSON.parse(data);
-        // Getting only the required attributes
-        // console.log(products[3].sellables[0].stock_entries);
-        // console.log(products[4].sellables[0].stock_entries);
-        // console.log(products[5].sellables[0].stock_entries);
-        // console.log(products[6]);
-        // return;
         
         for(let i=0; i<products.length; i++){
           let newItem={
@@ -268,7 +262,8 @@ const scheduleCreateItemsUpdatedAndErrorsTable=(cronExpression)=>{
     createVeeqoTable();
     createSquareSpaceTable();
     console.log('Finished Creating items updated and Errors table');
-  })
+  }
+)
   return job;
 }
 
@@ -282,7 +277,8 @@ const scheduleDroppingErrorsItemsUpdatedTables=(cronExpression)=>{
     dropVeeqotable();
     dropSquarespacetable()
     console.log('Finished Dropping Errors table');
-  })
+  }
+)
   return job;
 }
 
@@ -294,7 +290,8 @@ const scheduleFetchFromBothveeqoAndSquarespace=(cronExpression)=>{
       fetchFromVeeqo();
       fecthFromSquarespace();
     console.log('Finished fetching from veeqo and square space')
-  })
+  }
+)
   return job;
 }
 
@@ -474,19 +471,16 @@ const scheduleInventoryUpdates=(cronExpression) =>{
             request.end();
 
     console.log('Inventory update job completed.');
-  });
-
-  // You can optionally stop the job later if needed
-  // job.stop(); 
-
+  }
+);
   return job; // Return the job object if you need to access it later
 }
 
 // Scheduling the jobs
-const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('00 06 * * *');
-const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('02 06 * * *');
-const invenoryUpdatejob = scheduleInventoryUpdates('04 06 * * *');
-const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('06 06 * * *');
+const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('0 */12 * * *');
+const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('2 */12 * * *');
+const invenoryUpdatejob = scheduleInventoryUpdates('4 */12 * * *');
+const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('6 */12 * * *');
 
 
 // Route controllers
