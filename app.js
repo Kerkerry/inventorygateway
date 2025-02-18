@@ -17,6 +17,13 @@ const options = {
 	password: process.env.DB_PASSWORD,
 	database: 'inventory'
 };
+// const options={
+//   host:'localhost',
+//   user: 'root',
+//   password:'',
+//   database:'inventory',
+//   port:process.env.DB_PORT
+// }
 const store =new MySQLStore(options);
 app.use(cookieParser());
 app.use(

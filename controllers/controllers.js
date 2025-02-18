@@ -354,7 +354,7 @@ const scheduleInventoryUpdates=(cronExpression) =>{
             // Api options
             const options = {
               hostname: 'api.veeqo.com',
-              path: '/products?page_size=250',
+              path: '/products?since_id=12345&created_at_min=2016-03-01%2011%3A10%3A01&page_size=250&page=1&query=',
               method: 'GET',
               headers: {
                 'x-api-key': process.env.veeqo_api_key,
@@ -372,15 +372,23 @@ const scheduleInventoryUpdates=(cronExpression) =>{
             
               res.on('end', () => {
                 const products = JSON.parse(data);
-                for(let i=0; i<products.length; i++){
-                  let newItem={
-                    'sku':products[i].sellables[0].sku_code,
-                    'name':products[i].sellables[0].product_title,
-                    'quantity':products[i].sellables[0].stock_entries[0].physical_stock_level
-                  }
-                  responseItems.push(newItem);
-                }
-              // console.log(responseItems);
+                // Filter the items based on the reuired warehouse and create a new array
+                const availableStockLevels = products.map(warehouse => {
+                  const fulfillmentEntry = warehouse.sellables[0].stock_entries.find(entry => {
+                    return entry.warehouse.name === "Amboseli Foods - Fulfillment" || entry.warehouse.name === "Amboseli Foods-Layton";
+                  });
+                
+                   let newItem={
+                    'sku':warehouse.sellables[0].sku_code,
+                    'name':warehouse.sellables[0].product_title,
+                    'quantity':fulfillmentEntry? fulfillmentEntry.available_stock_level: 0
+                   }
+                   responseItems.push(newItem);
+                });
+                console.log(responseItems);
+                  
+                // return;
+              
               // Squarespace
                   const options0 = {
                     hostname: 'api.squarespace.com',

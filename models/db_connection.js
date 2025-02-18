@@ -8,6 +8,13 @@ const connection = mysql.createConnection(
         database:'inventory',
         port:process.env.DB_PORT
     }
+    // {
+    //     host:'localhost',
+    //     user: 'root',
+    //     password:'',
+    //     database:'inventory',
+    //     port:process.env.DB_PORT
+    // }
 );
 
 export default connection;
