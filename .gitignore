@@ -2,3 +2,4 @@ credentials.env
 node_modules
 config.js
 inventory-gateway-key.pem
+example.js

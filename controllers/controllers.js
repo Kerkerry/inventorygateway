@@ -138,7 +138,7 @@ const fetchFromVeeqo=()=>{
     const options = {
       hostname: 'api.veeqo.com',
       // path: '/products?since_id=40236984&warehouse_id=59669&created_at_min=2016-03-01%2011%3A10%3A01&page_size=250&page=1&query=',
-      path: '/products?since_id=40236984&page_size=250&page=1',
+      path: '/products?since_id=40236984&page_size=100&page=1',
       method: 'GET',
       headers: {
         'x-api-key': process.env.veeqo_api_key,
@@ -158,6 +158,8 @@ const fetchFromVeeqo=()=>{
         const products = JSON.parse(data);
         
         for(let i=0; i<products.length; i++){
+          console.log(`${i}:  ${products[i].sellables[0].sku_code}`);
+          
           let newItem={
             'sku':products[i].sellables[0].sku_code,
             'name':products[i].sellables[0].product_title,
@@ -201,56 +203,65 @@ const fetchFromVeeqo=()=>{
   request.end();
 }
 
+
 // fetchFromVeeqo();
 // Fetch from squarespace
-const fecthFromSquarespace=()=>{
-  const options0 = {
-    hostname: 'api.squarespace.com',
-    path: `/1.0/commerce/inventory`,
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${process.env.squarespace_api_key}`,
-      'Accept': 'application/json',
-      'User-Agent':userAgent
-    }
+// Fetch from squarespace using the cursor and update our local database
+async function fecthFromSquarespace(apiKey) {
+  const baseUrl = 'https://api.squarespace.com/1.0/commerce/inventory';
+  let allInventory = [];
+  let cursor = null;
+  const apiVersion = '1.0'; // Or the latest version
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'User-Agent': userAgent // Replace with your app info
   };
 
-  const requ = https.request(options0, (resp) => {
-    let responseData = '';
-  
-    resp.on('data', (chunk) => {
-      responseData += chunk;
-    });
-  
-    resp.on('end', async () => {
-      if (resp.statusCode === 200) {
-        console.log('Inventory retrieved successfully!');
-        const inventoryData = JSON.parse(responseData);
-        // Squarespace invenory
-        const sqinventory=inventoryData.inventory;
-        for(let i=0; i<sqinventory.length;i++){
-          const sq=queries.insertIntoSquarespace(sqinventory[i].variantId,sqinventory[i].sku,sqinventory[i].descriptor,sqinventory[i].quantity);
-          connection.query(sq,(error,result)=>{
-            if(error){
-              console.log(`Error inserting ${sqinventory[i].sku} into squarespace table: ${error}`);
-              return
-            }
-            console.log(`Succesfully insert ${sqinventory[i].sku} into squarespace table`);
-          })
-        }
-        
-      } else {
-        console.error(`Error retrieving inventory: ${resp.statusCode}`);
-        console.error(responseData);
+  try {
+    while (true) {
+      let url = baseUrl;
+      if (cursor) {
+        url += `?cursor=${cursor}`;
       }
-    });
-  });
 
-  requ.on('error', (error) => {
-    console.error('Error making request:', error);
-  });
-  
-  requ.end();
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching inventory:', response.status, errorData);
+        break; // Stop fetching on error
+      }
+
+      const data = await response.json();
+      allInventory = allInventory.concat(data.inventory);
+
+      if (data.pagination && data.pagination.hasNextPage && data.pagination.nextPageCursor) {
+        cursor = data.pagination.nextPageCursor;
+        console.log(`Fetched ${data.inventory.length} items. Next cursor: ${cursor}`);
+      } else {
+        console.log('Fetched all inventory items.');
+        break; // No more pages
+      }
+    }
+  } catch (error) {
+    console.error('An unexpected error occurred:', error);
+  }
+  // Inserting into the squarespace sql table
+  for(let i=0; i<allInventory.length;i++){
+    const sq=queries.insertIntoSquarespace(allInventory[i].variantId,allInventory[i].sku,allInventory[i].descriptor,allInventory[i].quantity);
+    connection.query(sq,(error,result)=>{
+      if(error){
+        console.log(`Error inserting ${allInventory[i].sku} into squarespace table: ${error}`);
+        return
+      }
+      console.log(`Succesfully insert ${allInventory[i].sku} into squarespace table`);
+    })
+  }
+
 }
 
 // Schedule creating items_udated, errors, veeqo, and squarespace tables
@@ -288,7 +299,7 @@ const scheduleFetchFromBothveeqoAndSquarespace=(cronExpression)=>{
   const job=cron.schedule(cronExpression,()=>{
     console.log('Preparing to fetch from veeqo and square space')
       fetchFromVeeqo();
-      fecthFromSquarespace();
+      fecthFromSquarespace(process.env.squarespace_api_key);
     console.log('Finished fetching from veeqo and square space')
   }
 )
@@ -345,6 +356,100 @@ const updateInventoryItem=(variantId,quantity,sku) =>{
     req.end();
   });
 }
+
+
+
+// Fetching all items from squarespace using the cursor or fetch from all square space pages
+async function fetchAllInventoryFromSquareSpace(apiKey,responseItems) {
+  const baseUrl = 'https://api.squarespace.com/1.0/commerce/inventory';
+  let allInventory = [];
+  let cursor = null;
+  const apiVersion = '1.0'; // Or the latest version
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'User-Agent': userAgent // Replace with your app info
+  };
+
+  try {
+    while (true) {
+      let url = baseUrl;
+      if (cursor) {
+        url += `?cursor=${cursor}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching inventory:', response.status, errorData);
+        break; // Stop fetching on error
+      }
+
+      const data = await response.json();
+      allInventory = allInventory.concat(data.inventory);
+
+      if (data.pagination && data.pagination.hasNextPage && data.pagination.nextPageCursor) {
+        cursor = data.pagination.nextPageCursor;
+        console.log(`Fetched ${data.inventory.length} items. Next cursor: ${cursor}`);
+        // Optional: Add a delay to be mindful of rate limits
+        // await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        console.log('Fetched all inventory items.');
+        break; // No more pages
+      }
+    }
+  } catch (error) {
+    console.error('An unexpected error occurred:', error);
+  }
+  for(let i=0; i<allInventory.length; i++){
+                          
+    const veeqoitem=responseItems.find(item=>item.sku===allInventory[i].sku)
+    const sqsku=allInventory[i].sku;
+    try {
+      await updateInventoryItem(allInventory[i].variantId,veeqoitem.quantity,allInventory[i].sku).then((v)=>{
+        
+         const insertquery=queries.insertIntoItemsUpdated(sqsku,allInventory[i].descriptor,veeqoitem.quantity);
+         connection.query(insertquery,(error,result)=>{
+           if(error){
+             console.log(`"Error inserting item from the sql database: ", ${sqsku} >> ${error}`);
+             return;
+           }
+           console.log("Successfully inserted>>>",sqsku);
+         })
+      });
+      
+    } catch (error) {
+      
+      if(error.toString().includes("Cannot read properties of undefined")){
+        const q=queries.insertIntoErrors(sqsku,'Failed to fetch the item from veeqo')
+            connection.query(q,(error,result)=>{
+              if(error){
+                console.log(`Error inserting the error: ${sqsku} >> ${error}`);
+                return;
+              }
+              console.log("Succefully inserted error",sqsku);
+            })
+      }else{
+        const q=queries.insertIntoErrors(sqsku,error)
+            connection.query(q,(error,result)=>{
+              if(error){
+                console.log(`Error inserting the error: ${sqsku} >> ${error}`);
+                return;
+              }
+              console.log("Succefully inserted error",sqsku);
+            })
+      }
+    }
+  }
+  // return allInventory;
+}
+
+
+
 // Scheduling update
 const scheduleInventoryUpdates=(cronExpression) =>{
   // Create a new cron job
@@ -390,85 +495,14 @@ const scheduleInventoryUpdates=(cronExpression) =>{
                 // return;
               
               // Squarespace
-                  const options0 = {
-                    hostname: 'api.squarespace.com',
-                    path: `/1.0/commerce/inventory`,
-                    method: 'GET',
-                    headers: {
-                      'Authorization': `Bearer ${process.env.squarespace_api_key}`,
-                      'Accept': 'application/json',
-                      'User-Agent':userAgent
-                    }
-                  };
-                  // Fetching the items
-                  const requ = https.request(options0, (resp) => {
-                    let responseData = '';
-                  
-                    resp.on('data', (chunk) => {
-                      responseData += chunk;
-                    });
-                  
-                    resp.on('end', async () => {
-                      if (resp.statusCode === 200) {
-                        console.log('Inventory retrieved successfully!');
-                        const inventoryData = JSON.parse(responseData);
-                        // Squarespace invenory
-                        const sqinventory=inventoryData.inventory;
-                        // Filtering veeqo items to be left with only those on square space
-                        const similarItemsveeqo=filterSimilarItems(sqinventory,responseItems)
-                        // Updating squarespace inventory
-                       
-                        for(let i=0; i<sqinventory.length; i++){
-                          
-                          const veeqoitem=responseItems.find(item=>item.sku===sqinventory[i].sku)
-                          const sqsku=sqinventory[i].sku;
-                          try {
-                            await updateInventoryItem(sqinventory[i].variantId,veeqoitem.quantity,sqinventory[i].sku).then((v)=>{
-                              
-                               const insertquery=queries.insertIntoItemsUpdated(sqsku,sqinventory[i].descriptor,veeqoitem.quantity);
-                               connection.query(insertquery,(error,result)=>{
-                                 if(error){
-                                   console.log(`"Error inserting item from the sql database: ", ${sqsku} >> ${error}`);
-                                   return;
-                                 }
-                                 console.log("Successfully inserted>>>",sqsku);
-                               })
-                            });
-                            
-                          } catch (error) {
-                            
-                            if(error.toString().includes("Cannot read properties of undefined")){
-                              const q=queries.insertIntoErrors(sqsku,'Failed to fetch the item from veeqo')
-                                  connection.query(q,(error,result)=>{
-                                    if(error){
-                                      console.log(`Error inserting the error: ${sqsku} >> ${error}`);
-                                      return;
-                                    }
-                                    console.log("Succefully inserted error",sqsku);
-                                  })
-                            }else{
-                              const q=queries.insertIntoErrors(sqsku,error)
-                                  connection.query(q,(error,result)=>{
-                                    if(error){
-                                      console.log(`Error inserting the error: ${sqsku} >> ${error}`);
-                                      return;
-                                    }
-                                    console.log("Succefully inserted error",sqsku);
-                                  })
-                            }
-                          }
-                        }
-                      } else {
-                        console.error(`Error retrieving inventory: ${resp.statusCode}`);
-                        console.error(responseData);
-                      }
-                    });
-                  });
-                  
-                  requ.on('error', (error) => {
-                    console.error('Error making request:', error);
-                  });
-                  requ.end();
+              fetchAllInventoryFromSquareSpace(process.env.squarespace_api_key,responseItems)
+              .then(inventory => {
+                console.log('Full Inventory:', inventory);
+                // Process your inventory data here
+              })
+              .catch(error => {
+                console.error('Failed to fetch full inventory:', error);
+              });
               
               });
               
