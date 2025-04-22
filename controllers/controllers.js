@@ -425,7 +425,7 @@ async function fetchAllInventoryFromSquareSpace(apiKey,responseItems) {
     } catch (error) {
       
       if(error.toString().includes("Cannot read properties of undefined")){
-        const q=queries.insertIntoErrors(sqsku,'Failed to fetch the item from veeqo')
+        const q=queries.insertIntoErrors(sqsku,'The item is missing on veeqo')
             connection.query(q,(error,result)=>{
               if(error){
                 console.log(`Error inserting the error: ${sqsku} >> ${error}`);

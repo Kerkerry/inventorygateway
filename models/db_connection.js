@@ -8,6 +8,7 @@ const connection = mysql.createConnection(
         database:'inventory',
         port:process.env.DB_PORT
     }
+
 );
 
 export default connection;
