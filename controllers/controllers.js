@@ -343,7 +343,7 @@ const updateInventoryItem=(variantId,quantity,sku) =>{
         } else {
           console.error(`Error Inserted inventory for ${sku}: ${res.statusCode}`);
           console.error(responseData);
-          reject(new Error(`Error Inserted inventory for ${sku}`)); // Reject the promise on error
+          reject(new Error(`Error Inserted inventory for ${sku}: ${responseData}`)); // Reject the promise on error
         }
       });
     });
@@ -520,10 +520,10 @@ const scheduleInventoryUpdates=(cronExpression) =>{
 // const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('2 */12 * * *');
 // const invenoryUpdatejob = scheduleInventoryUpdates('4 */12 * * *');
 // const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('6 */12 * * *');
-const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('22 */21 * * *');
-const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('23 */21 * * *');
-const invenoryUpdatejob = scheduleInventoryUpdates('24 */21 * * *');
-const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('25 */21 * * *');
+const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('30 */22 * * *');
+const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('31 */22 * * *');
+const invenoryUpdatejob = scheduleInventoryUpdates('32 */22 * * *');
+const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('33 */22 * * *');
 
 
 // Route controllers
