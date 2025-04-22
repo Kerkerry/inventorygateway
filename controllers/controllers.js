@@ -139,6 +139,7 @@ const fetchFromVeeqo=()=>{
       hostname: 'api.veeqo.com',
       // path: '/products?since_id=40236984&warehouse_id=59669&created_at_min=2016-03-01%2011%3A10%3A01&page_size=250&page=1&query=',
       path: '/products?since_id=40236984&page_size=100&page=1',
+      // path:'/sellables',
       method: 'GET',
       headers: {
         'x-api-key': process.env.veeqo_api_key,
@@ -153,24 +154,26 @@ const fetchFromVeeqo=()=>{
       res.on('data', (chunk) => {
         data += chunk;
       });
-    
+// This is extracting only required information to be displayed.
+// We use product variants from sellables array instead of the main product
+// Main products are few in number and provides less items
       res.on('end', () => {
-        const products = JSON.parse(data);
-        
+        const products = JSON.parse(data);        
         for(let i=0; i<products.length; i++){
           console.log(`${i}:  ${products[i].sellables[0].sku_code}`);
-          
-          let newItem={
-            'sku':products[i].sellables[0].sku_code,
-            'name':products[i].sellables[0].product_title,
-            'quantity':products[i].sellables[0].stock_entries[0].physical_stock_level,
-            'total_quantity_sold':products[i].total_quantity_sold,
-            'total_available_stock_level':products[i].total_available_stock_level,
-            'total_stock_level':products[i].total_stock_level,
-            'price':products[i].sellables[0].price,
-            'image':products[i].sellables[0].image_url,
+          for(let j=0; j<products[i].sellables.length; j++){
+            let newItem={
+              'sku':products[i].sellables[j].sku_code,
+              'name':products[i].sellables[j].product_title,
+              'quantity':products[i].total_stock_level,
+              'total_quantity_sold':products[i].total_quantity_sold,
+              'total_available_stock_level':products[i].total_available_stock_level,
+              'total_stock_level':products[i].total_stock_level,
+              'price':products[i].sellables[j].price,
+              'image':products[i].sellables[j].image_url,
+            }
+            responseItems.push(newItem);
           }
-          responseItems.push(newItem);
         }
         // Sql operations should come here
         for(let i=0; i<responseItems.length;i++){
@@ -203,8 +206,6 @@ const fetchFromVeeqo=()=>{
   request.end();
 }
 
-
-// fetchFromVeeqo();
 // Fetch from squarespace
 // Fetch from squarespace using the cursor and update our local database
 async function fecthFromSquarespace(apiKey) {
@@ -395,8 +396,6 @@ async function fetchAllInventoryFromSquareSpace(apiKey,responseItems) {
       if (data.pagination && data.pagination.hasNextPage && data.pagination.nextPageCursor) {
         cursor = data.pagination.nextPageCursor;
         console.log(`Fetched ${data.inventory.length} items. Next cursor: ${cursor}`);
-        // Optional: Add a delay to be mindful of rate limits
-        // await new Promise(resolve => setTimeout(resolve, 500));
       } else {
         console.log('Fetched all inventory items.');
         break; // No more pages
@@ -405,13 +404,14 @@ async function fetchAllInventoryFromSquareSpace(apiKey,responseItems) {
   } catch (error) {
     console.error('An unexpected error occurred:', error);
   }
-  for(let i=0; i<allInventory.length; i++){
-                          
+
+  // Filtering to get similar items present in both veeqo and square space
+  // Then based on their similarity we can update square space
+  for(let i=0; i<allInventory.length; i++){           
     const veeqoitem=responseItems.find(item=>item.sku===allInventory[i].sku)
     const sqsku=allInventory[i].sku;
     try {
       await updateInventoryItem(allInventory[i].variantId,veeqoitem.quantity,allInventory[i].sku).then((v)=>{
-        
          const insertquery=queries.insertIntoItemsUpdated(sqsku,allInventory[i].descriptor,veeqoitem.quantity);
          connection.query(insertquery,(error,result)=>{
            if(error){
@@ -477,32 +477,29 @@ const scheduleInventoryUpdates=(cronExpression) =>{
             
               res.on('end', () => {
                 const products = JSON.parse(data);
+
                 // Filter the items based on the reuired warehouse and create a new array
-                const availableStockLevels = products.map(warehouse => {
-                  const fulfillmentEntry = warehouse.sellables[0].stock_entries.find(entry => {
-                    return entry.warehouse.name === "Amboseli Foods - Fulfillment" || entry.warehouse.name === "Amboseli Foods-Layton";
-                  });
+                for(let i=0; i<products.length; i++){
+                  for(let j=0; j<products[i].sellables.length; j++){
+                    const fulfillmentEntry = products[i].sellables[j].stock_entries.find(entry => {
+                      return entry.warehouse.name === "Amboseli Foods - Fulfillment" || entry.warehouse.name === "Amboseli Foods-Layton";
+                    });
+                    let newItem={
+                      'sku':products[i].sellables[j].sku_code,
+                      'name':products[i].sellables[j].product_title,
+                      'quantity':fulfillmentEntry? fulfillmentEntry.available_stock_level: 0
+                     }
+                     responseItems.push(newItem);
+                  }
+                }
                 
-                   let newItem={
-                    'sku':warehouse.sellables[0].sku_code,
-                    'name':warehouse.sellables[0].product_title,
-                    'quantity':fulfillmentEntry? fulfillmentEntry.available_stock_level: 0
-                   }
-                   responseItems.push(newItem);
-                });
-                console.log(responseItems);
-                  
-                // return;
-              
               // Squarespace
               fetchAllInventoryFromSquareSpace(process.env.squarespace_api_key,responseItems)
               .then(inventory => {
                 console.log('Full Inventory:', inventory);
                 // Process your inventory data here
               })
-              .catch(error => {
-                console.error('Failed to fetch full inventory:', error);
-              });
+            
               
               });
               
@@ -519,10 +516,14 @@ const scheduleInventoryUpdates=(cronExpression) =>{
 }
 
 // Scheduling the jobs
-const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('0 */12 * * *');
-const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('2 */12 * * *');
-const invenoryUpdatejob = scheduleInventoryUpdates('4 */12 * * *');
-const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('6 */12 * * *');
+// const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('0 */12 * * *');
+// const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('2 */12 * * *');
+// const invenoryUpdatejob = scheduleInventoryUpdates('4 */12 * * *');
+// const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('6 */12 * * *');
+const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('22 */21 * * *');
+const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('23 */21 * * *');
+const invenoryUpdatejob = scheduleInventoryUpdates('24 */21 * * *');
+const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('25 */21 * * *');
 
 
 // Route controllers
