@@ -10,16 +10,21 @@ const app=express();
 
 // Session
 const MySQLStore = expressMySQLSession(session);
-// https://developers.google.com/shopping-content/guides/how-tos/service-accounts
-// usimplyseason@merchant-ad-manager.iam.gserviceaccount.com
-const options = {
-	host: 'localhost',
-	port: process.env.DB_PORT,
-	user: process.env.DB_USER,
-	password: process.env.DB_PASSWORD,
-	database: 'inventory'
-};
 
+// const options = {
+// 	host: 'localhost',
+// 	port: process.env.DB_PORT,
+// 	user: process.env.DB_USER,
+// 	password: process.env.DB_PASSWORD,
+// 	database: 'inventory'
+// };
+const options={
+  host:'localhost',
+  user: 'root',
+  password:'',
+  database:'inventory',
+  port:process.env.DB_PORT
+}
 const store =new MySQLStore(options);
 app.use(cookieParser());
 app.use(

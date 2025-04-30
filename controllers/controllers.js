@@ -162,6 +162,8 @@ const fetchFromVeeqo=()=>{
         for(let i=0; i<products.length; i++){
           console.log(`${i}:  ${products[i].sellables[0].sku_code}`);
           for(let j=0; j<products[i].sellables.length; j++){
+            console.log(products[i].sellables[j].stock_entries);
+            
             let newItem={
               'sku':products[i].sellables[j].sku_code,
               'name':products[i].sellables[j].product_title,
@@ -175,9 +177,10 @@ const fetchFromVeeqo=()=>{
             responseItems.push(newItem);
           }
         }
+        // return;
         // Sql operations should come here
         for(let i=0; i<responseItems.length;i++){
-          
+        
           const iq=queries.insertIntoVeeqo(
             responseItems[i].sku,responseItems[i].name,responseItems[i].quantity,responseItems[i].total_quantity_sold,
             responseItems[i].total_available_stock_level,responseItems[i].total_stock_level,responseItems[i].price,
@@ -206,6 +209,7 @@ const fetchFromVeeqo=()=>{
   request.end();
 }
 
+// fetchFromVeeqo();
 // Fetch from squarespace
 // Fetch from squarespace using the cursor and update our local database
 async function fecthFromSquarespace(apiKey) {
@@ -482,7 +486,8 @@ const scheduleInventoryUpdates=(cronExpression) =>{
                 for(let i=0; i<products.length; i++){
                   for(let j=0; j<products[i].sellables.length; j++){
                     const fulfillmentEntry = products[i].sellables[j].stock_entries.find(entry => {
-                      return entry.warehouse.name === "Amboseli Foods - Fulfillment" || entry.warehouse.name === "Amboseli Foods-Layton";
+                      // return entry.warehouse.name === "Amboseli Foods-Layton" || entry.warehouse.name === "Layton WHS - Amboseli Foods" || entry.warehouse.name === "Amboseli Foods - Production";
+                      return entry.warehouse.id === 59669;
                     });
                     let newItem={
                       'sku':products[i].sellables[j].sku_code,
@@ -520,10 +525,10 @@ const scheduleInventoryUpdates=(cronExpression) =>{
 // const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('2 */12 * * *');
 // const invenoryUpdatejob = scheduleInventoryUpdates('4 */12 * * *');
 // const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('6 */12 * * *');
-const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('30 */22 * * *');
-const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('31 */22 * * *');
-const invenoryUpdatejob = scheduleInventoryUpdates('32 */22 * * *');
-const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('33 */22 * * *');
+const dropItemsUpdatedAndErrorsTableJob=scheduleDroppingErrorsItemsUpdatedTables('14 */17 * * *');
+const createErrorsAndItemsUpdatedJob=scheduleCreateItemsUpdatedAndErrorsTable('15 */17 * * *');
+const invenoryUpdatejob = scheduleInventoryUpdates('16 */17 * * *');
+const fetchfromVeeqoandSquareSpacejob = scheduleFetchFromBothveeqoAndSquarespace('17 */17 * * *');
 
 
 // Route controllers
